@@ -9,14 +9,15 @@ from fastapi.responses import JSONResponse, FileResponse
 from ultralytics import YOLO
 import torch
 import cv2
+import base64
 
-from utils.utils import jpeg_bytes_to_bgr
+from utils.utils import read_image_bytes, draw_boxes
 
 # -----------------------------
 # Config
 # -----------------------------
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join("E:\\ObjectDetection\\Day4\\results8\\weights\\best.pt")
+MODEL_PATH = os.path.join("best.pt")
 CONF_THRESH = 0.25  # confidence threshold for returned detections
 
 # -----------------------------
@@ -52,38 +53,63 @@ def health():
 # -----------------------------
 # Single image detect (HTTP)
 # -----------------------------
-@app.post("/detect")
-async def detect(file: UploadFile = File(...)):
-    img_bytes = await file.read()
-    img = jpeg_bytes_to_bgr(img_bytes)
+# @app.post("/detect")
+# async def detect(file: UploadFile = File(...)):
+#     try:
+#         # Read and decode image
+#         contents = await file.read()
+#         np_img = np.frombuffer(contents, np.uint8)
+#         img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
-    # Inference
-    results = model.predict(img, conf=CONF_THRESH, device=DEVICE, verbose=False)[0]
+#         if img is None:
+#             return JSONResponse(content={"error": "Invalid image"}, status_code=400)
 
-    # Parse detections
-    detections = []
-    if results.boxes is not None and len(results.boxes) > 0:
-        xyxy = results.boxes.xyxy.cpu().numpy()   # (N,4)
-        conf = results.boxes.conf.cpu().numpy()   # (N,)
-        cls  = results.boxes.cls.cpu().numpy()    # (N,)
-        names = results.names  # dict of class idx->name
+#         # Run YOLO prediction
+#         results = model.predict(img, conf=0.5)
 
-        for (x1, y1, x2, y2), c, k in zip(xyxy, conf, cls):
-            detections.append({
-                "bbox": [float(x1), float(y1), float(x2), float(y2)],
-                "confidence": float(c),
-                "class_id": int(k),
-                "class_name": names[int(k)]
-            })
+#         # Draw results (annotated image)
+#         annotated = results[0].plot()
 
-    return JSONResponse({"detections": detections, "width": img.shape[1], "height": img.shape[0]})
+#         # Encode to base64 string
+#         _, buffer = cv2.imencode('.jpg', annotated)
+#         img_base64 = base64.b64encode(buffer).decode("utf-8")
+
+#         # Return base64 image as JSON
+#         return {"image": f"data:image/jpeg;base64,{img_base64}"}
+
+#     except Exception as e:
+#         return JSONResponse(content={"error": str(e)}, status_code=500)
+
+    # img_bytes = await file.read()
+    # img = jpeg_bytes_to_bgr(img_bytes)
+
+    # # Inference
+    # results = model.predict(img, conf=CONF_THRESH, device=DEVICE, verbose=False)[0]
+
+    # # Parse detections
+    # detections = []
+    # if results.boxes is not None and len(results.boxes) > 0:
+    #     xyxy = results.boxes.xyxy.cpu().numpy()   # (N,4)
+    #     conf = results.boxes.conf.cpu().numpy()   # (N,)
+    #     cls  = results.boxes.cls.cpu().numpy()    # (N,)
+    #     names = results.names  # dict of class idx->name
+
+    #     for (x1, y1, x2, y2), c, k in zip(xyxy, conf, cls):
+    #         detections.append({
+    #             "bbox": [float(x1), float(y1), float(x2), float(y2)],
+    #             "confidence": float(c),
+    #             "class_id": int(k),
+    #             "class_name": names[int(k)]
+    #         })
+
+    # return JSONResponse({"detections": detections, "width": img.shape[1], "height": img.shape[0]})
 
 # -----------------------------
 # Realtime detect (WebSocket)
 # Client sends binary JPEG frames; server replies JSON per frame
 # -----------------------------
 
-model = YOLO("E:\\ObjectDetection\\Day4\\results10\\weights\\best.pt")  # put your path here
+model = YOLO("best.pt")  # put your path here
 os.makedirs("outputs", exist_ok=True)
 @app.post("/api/predict-image")
 async def predict_image(file: UploadFile = File(...)):
