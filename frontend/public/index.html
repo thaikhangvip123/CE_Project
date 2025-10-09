@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>YOLOv8 Realtime Detection</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="E:\AI-Vision\frontend\src\App.css" rel="stylesheet" />
+</head>
+<body>
+  <div id="root">
+  <div class="wrap">
+    <h1>YOLOv8 Realtime Detection</h1>
+
+    <div class="video-wrap">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+
+    <div class="controls">
+      <button id="btnStart">Start</button>
+      <button id="btnStop" disabled>Stop</button>
+      <span id="status">Idle</span>
+      <span id="fps"></span>
+    </div>
+
+    <div class="note">
+      Backend WebSocket: <code>ws://localhost:8000/ws</code>
+    </div>
+  </div>
+  </div>
+  <script src="./script.js"></script>
+</body>
+</html>
