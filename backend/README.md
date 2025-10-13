@@ -1,3 +1,5 @@
+in cmd run "pip install -r requirements.txt"
+
 use "uvicorn app:app --reload --host 0.0.0.0 --port 8000" to run websocket
 
 enter link "http://localhost:8000/docs" to test model by fastAPI
