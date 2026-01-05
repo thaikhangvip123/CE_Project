@@ -194,7 +194,15 @@ const LiveView = forwardRef(({ onWarped }, ref) => {
   /* ------------------ Render ------------------ */
   return (
     <div className="rounded-xl border border-dashed p-2">
-      <input type="file" accept="image/*" onChange={loadImage} />
+      <label className="cursor-pointer rounded-lg bg-blue-300 px-3 py-1.5 text-sm text-white hover:bg-blue-700 transition">
+        Choose file to upload
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={loadImage}
+        />
+      </label>
 
       <canvas
         ref={canvasRef}
