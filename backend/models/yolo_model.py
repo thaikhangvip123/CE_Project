@@ -1,3 +1,5 @@
+# backend/models/yolo_model.py
+
 from ultralytics import YOLO
 
 class YOLOModel:
@@ -5,7 +7,7 @@ class YOLOModel:
         self.model = YOLO(weights_path)
 
     def predict(self, frame, conf=0.25):
-        return self.model(frame, conf=conf)
+        return self.model(frame, conf=conf)[0]
 
     @property
     def labels(self):
