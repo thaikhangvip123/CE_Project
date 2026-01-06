@@ -1,70 +1,41 @@
-import numpy as np
-import cv2
-from models.dot_model import DotYOLOModel
-
-
-DOT_COLORS = [
-    (0, 0, 255),     # dot 1 - red
-    (255, 0, 0),     # dot 2 - blue
-    (0, 255, 0),     # dot 3 - green
-    (0, 255, 255),   # dot 4 - yellow
-    (255, 0, 255),   # dot 5 - purple
-    (255, 255, 0),   # dot 6 - cyan
-    (0, 165, 255),   # dot 7 - orange
-    (255, 255, 255), # dot 8 - white
-]
-
 import cv2
 import numpy as np
-import base64
-from models.dot_model import DotYOLOModel
+import io
 
-class DotDetection:
-    def __init__(self, model_path: str):
-        self.model = DotYOLOModel(model_path)
+from models.yolo_model import YOLO
 
-    def detect(self, image_bytes: bytes):
-        np_img = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+# Load model một lần khi server khởi chạy
+MODEL_PATH = 'target.pt'
+print(f"Loading YOLO model from {MODEL_PATH}...")
+model = YOLO(MODEL_PATH)
 
-        if img is None:
-            raise ValueError("Invalid image")
+def detect_keypoints(image_bytes):
+    # 1. Đọc ảnh từ bytes
+    np_arr = np.frombuffer(image_bytes, np.uint8)
+    frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    
+    if frame is None:
+        return None, None
 
-        result = self.model.predict(img)[0]
+    # 2. Chạy inference
+    results = model(frame, conf=0.5)[0]
 
-        if result.keypoints is None:
-            return [], None
+    keypoints_list = []
 
-        keypoints = result.keypoints.xy[0]
-        confidences = result.keypoints.conf[0]
+    debug_img = frame.copy()
 
-        detections = []
+    if results.keypoints is not None and len(results.keypoints.xy) > 0:
+        keypoints = results.keypoints.xy[0].cpu().numpy()  # Lấy đối tượng đầu tiên
+        for i, (x, y) in enumerate(keypoints):
+            if x != 0 or y != 0:
+                keypoints_list.append({"id": i, "x": float(x), "y": float(y)})
+                # Vẽ chấm đỏ và số thứ tự màu vàng
+                cv2.circle(debug_img, (int(x), int(y)), 5, (0, 0, 255), -1)
+                cv2.putText(debug_img, str(i), (int(x), int(y)-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    
+    # Encode ảnh để trả về client
+    _, buffer = cv2.imencode('.png', debug_img)
+    img_bytes = io.BytesIO(buffer)
 
-        for i, (point, conf) in enumerate(zip(keypoints, confidences)):
-            x, y = map(int, point.tolist())
-
-            # Draw dot
-            cv2.circle(img, (x, y), 6, DOT_COLORS[i], -1)
-            cv2.putText(
-                img,
-                f"{i+1}",
-                (x + 8, y - 8),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                DOT_COLORS[i],
-                2
-            )
-
-            detections.append({
-                "id": i + 1,
-                "label": f"dot_{i + 1}",
-                "x": x,
-                "y": y,
-                "confidence": round(float(conf), 3)
-            })
-
-        # Encode image → base64
-        _, buffer = cv2.imencode(".jpg", img)
-        image_base64 = base64.b64encode(buffer).decode("utf-8")
-
-        return detections, image_base64
+    return keypoints_list, img_bytes

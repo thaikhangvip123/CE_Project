@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, Response
+from fastapi.responses import JSONResponse, FileResponse, Response, StreamingResponse
 from ultralytics import YOLO
 import torch
 import cv2
@@ -16,7 +16,7 @@ import json
 
 from services.detection import DetectionService
 from utils.utils import read_image_bytes
-from services.dot_detection import DotDetection
+from services.dot_detection import detect_keypoints
 from services.score import find_bullseye_center, score_boxes
 
 # -----------------------------
@@ -72,36 +72,26 @@ async def predict_image(file: UploadFile = File(...)):
 
 # -----------------------------
 
-DOT_MODEL_PATH = "target.pt"
+# DOT_MODEL_PATH = "target.pt"
 
-if not os.path.exists(DOT_MODEL_PATH):
-    raise FileNotFoundError("target.pt not found")
+# if not os.path.exists(DOT_MODEL_PATH):
+#     raise FileNotFoundError("target.pt not found")
 
-dot_service = DotDetection(DOT_MODEL_PATH)
+# dot_service = DotDetection(DOT_MODEL_PATH)
 
-@app.post("/api/detect-dots")
-async def detect_dots(file: UploadFile = File(...)):
-    try:
-        contents = await file.read()
-        detections = dot_service.detect(contents)
+@app.post("/detect_pose")
+async def detect_pose(file: UploadFile = File(...)):
+    """
+    Endpoint nhận ảnh upload, detect 8 keypoints, trả về JSON + ảnh PNG đã đánh dấu
+    """
+    contents = await file.read()
+    keypoints, img_bytes = detect_keypoints(contents)
 
-        if len(detections) != 8:
-            return JSONResponse(
-                status_code=422,
-                content={
-                    "error": "Invalid number of dots detected",
-                    "detected": len(detections)
-                }
-            )
+    if keypoints is None:
+        return JSONResponse(content={"error": "Không thể đọc ảnh hoặc không tìm thấy keypoints"}, status_code=400)
 
-        return {
-            "model": "dots.pt",
-            "num_dots": len(detections),
-            "detections": detections
-        }
-
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+    # Trả về ảnh + tọa độ keypoints
+    return StreamingResponse(img_bytes, media_type="image/png")
 
 
 dst_points = np.float32([
