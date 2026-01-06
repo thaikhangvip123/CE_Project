@@ -98,6 +98,7 @@ const LiveView = forwardRef(({ onWarped }, ref) => {
       const newPts = [...points, [x, y]];
       setPoints(newPts);
       redraw(newPts);
+      console.log(`Điểm ${newPts.length}: x=${Math.round(x)}, y=${Math.round(y)}`);
     }
   };
 
