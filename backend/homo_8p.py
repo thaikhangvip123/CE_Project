@@ -2,14 +2,14 @@ import numpy as np
 
 # 8 điểm ảnh gốc
 src_pts = np.array([
-    [382, 74],
-    [1264, 76],
-    [1316, 164],
-    [1152, 826],
-    [1086, 876],
-    [466, 934],
-    [404, 890],
-    [308, 170]
+    [252, 109],
+    [772, 108],
+    [821, 157],
+    [813, 672],
+    [765, 720],
+    [257, 717],
+    [209, 672],
+    [205, 156]
 ], dtype=float)
 
 # 8 điểm ảnh chuẩn
@@ -48,3 +48,28 @@ H = np.array([
 ])
 
 print("Ma trận homography H:\n", H)
+
+def warp_point(x, y, H):
+    """
+    Chuyển 1 điểm (x, y) từ ảnh gốc sang ảnh chuẩn
+    """
+    pt = np.array([x, y, 1.0])
+    warped = H @ pt
+
+    X = warped[0] / warped[2]
+    Y = warped[1] / warped[2]
+
+    return X, Y
+
+def warp_two_points(x1, y1, x2, y2, H):
+    p1 = warp_point(x1, y1, H)
+    p2 = warp_point(x2, y2, H)
+    return p1, p2
+
+x1, y1 = 333, 389
+x2, y2 = 361, 417
+
+(p1x, p1y), (p2x, p2y) = warp_two_points(x1, y1, x2, y2, H)
+
+print(f"Điểm 1 sau warp: ({p1x:.2f}, {p1y:.2f})")
+print(f"Điểm 2 sau warp: ({p2x:.2f}, {p2y:.2f})")
