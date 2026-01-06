@@ -87,6 +87,7 @@ export default function WarpedView({ src, boxes = [], H = null }) {
                 top: mousePos.y + 12
               }}
             >
+              <div>#{Math.round(hoverBox.rank)}</div>
               <div>x1: {Math.round(hoverBox.x1)}</div>
               <div>y1: {Math.round(hoverBox.y1)}</div>
               <div>x2: {Math.round(hoverBox.x2)}</div>

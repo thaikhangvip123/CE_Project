@@ -43,9 +43,12 @@ const ScoreView = forwardRef(({ warpedImage, boxes }, ref) => {
 
           <hr />
           <div className="max-h-[200px] overflow-y-auto space-y-1 pr-2">
-            {result.shots.map((s, i) => (
-              <div key={i} className="flex justify-between rounded-md bg-gray-100 px-2 py-1 text-sm">
-                <span>Phát {i + 1}</span>
+            {result.shots.map((s) => (
+              <div
+                key={s.rank}
+                className="flex justify-between rounded-md bg-gray-100 px-2 py-1 text-sm"
+              >
+                <span>#{s.rank}</span>
                 <span>{s.score} điểm</span>
               </div>
             ))}

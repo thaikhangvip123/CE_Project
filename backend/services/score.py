@@ -73,10 +73,16 @@ def score_boxes(boxes, center):
             "distance": round(distance, 2),
             "score": score
         })
+
+    results.sort(
+        key=lambda x: (x["score"], -x["distance"]),
+        reverse=True
+    )
+    for i, r in enumerate(results):
+        r["rank"] = i + 1
+    
     print("CENTER:", center)
-    for b in boxes:
-        bx = (b["x1"] + b["x2"]) / 2
-        by = (b["y1"] + b["y2"]) / 2
-        print("SHOT:", bx, by)
+    for r in results:
+        print(f'#{r["rank"]}: score={r["score"]}, dist={r["distance"]}')
     return total_score, results
     
